@@ -642,8 +642,16 @@ function editorForm(item = null) {
     '<p class="form-message" data-form-message></p><button class="button form-submit" type="submit">' + (item ? "Save your changes" : "Add to the notebook") + ' ' + iconArrow() + '</button></form></section>';
 }
 async function adminPage(renderToken = routeSequence) {
-  if (!app.user || app.user.role !== "admin") return '<div class="page-shell">' + pageHero("Just for the Caffero editor", "A quieter little corner.", "Sign in with an administrator account to edit the coffee notebook.") +
-    '<div class="account-wrap"><section class="account-card"><h2>The editor’s desk.</h2><p>Content and contact messages stay private to your admin account.</p><a class="button" href="/account">Sign in to continue ' + iconArrow() + '</a></section></div></div>';
+  if (!app.user) return '<div class="page-shell">' + pageHero("CAFFERO OWNER ACCESS", "The editor’s desk.", "Sign in with the owner account to manage Caffero’s coffee notebook.") +
+    '<div class="account-wrap"><section class="account-card"><span class="eyebrow">PRIVATE ADMIN SIGN IN</span><h2>Welcome back, editor.</h2><p>This sign-in is for the site owner. Public Caffero accounts cannot edit website content.</p>' +
+    '<form class="form-stack" data-form="auth"><div class="form-field"><label for="auth-email">Admin email</label><input id="auth-email" name="email" type="email" autocomplete="username" maxlength="254" required></div>' +
+    '<div class="form-field"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" autocomplete="current-password" maxlength="128" required></div>' +
+    '<p class="form-message" data-form-message></p><button class="button form-submit" type="submit">Sign in to the editor ' + iconArrow() + '</button></form>' +
+    '<p class="form-help">Use the owner email and password set in Render as <strong>CAFFERO_ADMIN_EMAIL</strong> and <strong>CAFFERO_ADMIN_PASSWORD</strong>. If you added them after deployment, redeploy the service to create or promote the owner account.</p>' +
+    '<p class="account-switch"><a href="/">Back to the Caffero website ' + iconArrow() + '</a></p></section></div></div>';
+  if (app.user.role !== "admin") return '<div class="page-shell">' + pageHero("CAFFERO OWNER ACCESS", "This account is for brewing.", "The signed-in account does not have permission to edit website content.") +
+    '<div class="account-wrap"><section class="account-card"><span class="eyebrow">MEMBER ACCOUNT</span><h2>Owner access only.</h2><p>You’re signed in as <strong>' + esc(app.user.email) + '</strong>. Sign out, then use the owner email and password configured in Render.</p>' +
+    '<button class="button" type="button" data-action="logout">Sign out and switch account ' + iconArrow() + '</button><p class="form-help">If the owner account has not been created yet, add <strong>CAFFERO_ADMIN_EMAIL</strong> and <strong>CAFFERO_ADMIN_PASSWORD</strong> in the Render service environment, then redeploy.</p></section></div></div>';
   main.innerHTML = '<div class="page-shell"><section class="admin-page"><div class="wrap">' + eyebrow("CAFFERO · CONTENT STUDIO") + '<h1 style="font-size:clamp(45px,6vw,68px)">The editor’s desk.</h1><p class="section-intro">A good collection grows one thoughtful note at a time.</p>' +
     '<div class="admin-toolbar"><span class="eyebrow">Only you can see this page.</span><button class="button button-outline" type="button" data-action="logout">Sign out</button></div><div id="admin-root"><div class="loading-screen" role="status"><p>Getting the notebook ready…</p></div></div></div></section></div>';
   try {
@@ -806,12 +814,13 @@ async function submitForm(form) {
   if (submit) { submit.disabled = true; submit.textContent = "One little moment…"; }
   try {
     if (kind === "auth") {
-      const registering = app.authMode === "register";
+      const adminLogin = urlPath() === "/admin";
+      const registering = !adminLogin && app.authMode === "register";
       const result = await send(registering ? "/api/auth/register" : "/api/auth/login", "POST", { name: values.get("name"), email: values.get("email"), password: values.get("password") });
       app.user = result.user;
       await refreshFavorites();
       toast(registering ? "Welcome to Caffero. Here’s to a good first cup." : "Welcome back, " + app.user.name.split(" ")[0] + ".");
-      const destination = routeData().get("returnTo");
+      const destination = adminLogin ? "/admin" : routeData().get("returnTo");
       await navigate(destination && destination.startsWith("/") ? destination : "/saved");
     } else if (kind === "password") {
       await send("/api/auth/change-password", "POST", { currentPassword: values.get("currentPassword"), newPassword: values.get("newPassword") });
@@ -908,7 +917,7 @@ async function logOut() {
   app.saved.clear();
   updateNav();
   toast("You’ve signed out. Have a lovely cup.");
-  await navigate("/");
+  await navigate(urlPath() === "/admin" ? "/admin" : "/");
 }
 
 document.addEventListener("click", async (event) => {
