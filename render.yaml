@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: caffero
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    disk:
+      name: caffero-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: CAFFERO_ORIGIN
+        fromService:
+          type: web
+          name: caffero
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: CAFFERO_DATABASE
+        value: /var/data/caffero.sqlite
+      - key: CAFFERO_UPLOADS_DIRECTORY
+        value: /var/data/uploads
+      - key: CAFFERO_TRUST_PROXY
+        value: "true"
+      - key: CAFFERO_SESSION_SECRET
+        generateValue: true
+      - key: CAFFERO_ADMIN_EMAIL
+        sync: false
+      - key: CAFFERO_ADMIN_PASSWORD
+        sync: false

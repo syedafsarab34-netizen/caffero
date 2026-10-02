@@ -1,0 +1,9 @@
+/data/
+/public/uploads/*
+!/public/uploads/.gitkeep
+.env
+.env.*
+!.env.example
+node_modules/
+.DS_Store
+coverage/
